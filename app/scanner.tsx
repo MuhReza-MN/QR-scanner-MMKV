@@ -110,7 +110,7 @@ export default function ScannerScreen() {
 const styles = StyleSheet.create({
   safeArea : {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: 'black',
   },
   container: {
     flex: 1,

@@ -1,13 +1,13 @@
 import { Image } from 'expo-image';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { MMKV } from 'react-native-mmkv'
 
+import { getStorage } from '@/lib/storage';
 import { FontAwesome6, MaterialIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 
 export default function HomeScreen() {
   const [eventName, setEventName] = useState('');
@@ -18,9 +18,16 @@ export default function HomeScreen() {
   const [cardColor2, setCardColor2] = useState('');
   const [cardColorType, setCardColorType] = useState('');
 
-  const storage = new MMKV({
-    id: "data-storage",
-  });
+  const storage = getStorage();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const savedEventName = storage.getString('eventName');
+          if (savedEventName) {
+              setEventName(savedEventName);
+          } 
+      }, []) 
+  );
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
@@ -44,7 +51,7 @@ export default function HomeScreen() {
                 contentFit='contain'
               />
             </View>
-            <Text style={styles.eventName}>Event Name 2</Text>
+            <Text style={styles.eventName}>{eventName || 'Event Name 2'}</Text>
         </LinearGradient>
         <Link href={"/scanner"} asChild>
           <TouchableOpacity>
@@ -136,8 +143,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   iconsCon: {
-    flexDirection: 'column',
-    
+    flexDirection: 'column',   
     alignItems: "flex-end",
   },
 });
