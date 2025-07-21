@@ -70,8 +70,13 @@ export default function OptionScreen() {
                 </TouchableOpacity>
                 <Text style={styles.subLabel}>Click Image to Change</Text>
             </View>
-            <Text style={[styles.label, {marginBottom: 20}]}>Card Color Options</Text>
-            <View style={[styles.colorContainer]}>
+            <Text style={[styles.label, {marginBottom: 0}]}>Card Color Options</Text>
+            <View style={[styles.colorContainer, {marginBottom: 30}]}>
+                <Text style={[styles.label, {flex: 3}]}>Card Color Type :</Text>
+                <Text style={[styles.label, {flex: 2}]}>Gradient</Text>
+                <Text style={[styles.label, {flex: 2}]}>Solid</Text>
+            </View>
+            <View style={styles.colorContainer}>
                 <TouchableOpacity style={[{flexDirection: 'row', flex: 1}]}>
                     <View style={[styles.colorBox, {marginTop: 0, flex: 1}]}/>
                     <Text style={[styles.label, {marginTop: 0, flex: 5}]}>Color Hex 1</Text>
@@ -82,7 +87,6 @@ export default function OptionScreen() {
                     <Text style={[styles.label, {marginTop: 0, flex: 5}]}>Color Hex 2</Text>
                 </TouchableOpacity>
             </View>
-
 
             <TouchableOpacity style={styles.saveBtn} onPress={saveChanges} >
                 <Text style={styles.saveBtnTxt}>Simpan</Text>
