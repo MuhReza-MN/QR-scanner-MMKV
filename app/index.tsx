@@ -10,23 +10,27 @@ import { useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
-  const [eventName, setEventName] = useState('');
-  const [logoUri, setLogoUri] = useState('');
-  const isValidUri = (uri: string) => uri.startsWith('file://') || uri.startsWith('http');
-
-  const [cardColor1, setCardColor1] = useState('');
-  const [cardColor2, setCardColor2] = useState('');
-  const [cardColorType, setCardColorType] = useState('');
-
   const storage = getStorage();
+  const [eventName, setEventName] = useState('');
+  const [logoUri, setLogoUri] = useState(storage.getString('eventLogo') || '@/assets/images/rune.png');
+
+  const [cardColorType, setCardColorType] = useState(storage.getString('cardColorType') || 'gradient');
+  const [cardColor1, setCardColor1] = useState(storage.getString('cardColor1') || '#fc3636');
+  const [cardColor2, setCardColor2] = useState(storage.getString('cardColor2') || '#4736fc');
 
   useFocusEffect(
     React.useCallback(() => {
       const savedEventName = storage.getString('eventName');
-          if (savedEventName) {
-              setEventName(savedEventName);
-          } 
-      }, []) 
+      const savedColor1 = storage.getString('cardColor1');
+      const savedColor2 = storage.getString('cardColor2');
+      const savedColorType = storage.getString('cardColorType');
+      const savedLogo = storage.getString('eventLogo');
+      if (savedEventName) setEventName(savedEventName);
+      if (savedColor1) setCardColor1(savedColor1);
+      if (savedColor2) setCardColor2(savedColor2);
+      if (savedColorType) setCardColorType(savedColorType);
+      if (savedLogo) setLogoUri(savedLogo);
+    }, [])
   );
 
   return (
@@ -39,34 +43,34 @@ export default function HomeScreen() {
         </Link>
       </View>
       <View style={styles.setCenters}>
-        <LinearGradient 
-          colors={['#fc3636', '#4736fc']} 
-          start={{ x: 0, y: 0 }} 
+        <LinearGradient
+          colors={cardColorType === 'gradient' ? [cardColor1, cardColor2] : [cardColor1, cardColor1]}
+          start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={styles.card}>
-            <View style={styles.logoContainer}>
-              <Image
-                source={require('@/assets/images/rune.png')}
-                style={styles.logo}
-                contentFit='contain'
-              />
-            </View>
-            <Text style={styles.eventName}>{eventName || 'Event Name 2'}</Text>
+          <View style={styles.logoContainer}>
+            <Image
+              source={logoUri}
+              style={styles.logo}
+              contentFit='contain'
+            />
+          </View>
+          <Text style={styles.eventName}>{eventName || 'Event Name 2'}</Text>
         </LinearGradient>
         <Link href={"/scanner"} asChild>
           <TouchableOpacity>
-            <LinearGradient 
-              colors={['#fc3636', '#4736fc']} 
-              start={{ x: 0, y: 0 }} 
+            <LinearGradient
+              colors={cardColorType === 'gradient' ? [cardColor1, cardColor2] : [cardColor1, cardColor1]}
+              start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
               style={styles.card}>
-                <View style={styles.scanContainer}>
-                  <Text style={styles.scanText}>SCAN QR</Text>
-                  <View style={styles.iconsCon}>
-                    <MaterialIcons name="arrow-right-alt" size={32} color={"white"} />
-                    <MaterialIcons name="qr-code-scanner" size={50} color={"white"} style={{ marginTop: 10 }} />
-                  </View>
+              <View style={styles.scanContainer}>
+                <Text style={styles.scanText}>SCAN QR</Text>
+                <View style={styles.iconsCon}>
+                  <MaterialIcons name="arrow-right-alt" size={32} color={"white"} />
+                  <MaterialIcons name="qr-code-scanner" size={50} color={"white"} style={{ marginTop: 10 }} />
                 </View>
+              </View>
             </LinearGradient>
           </TouchableOpacity>
         </Link>
@@ -76,21 +80,21 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  optHeader : {
+  optHeader: {
     alignItems: 'flex-end',
     paddingEnd: 5,
     paddingTop: 25,
   },
-  optCons : {
+  optCons: {
     borderWidth: 3,
     borderRadius: 25,
     padding: 5,
   },
-  safeArea : {
+  safeArea: {
     flex: 1,
     backgroundColor: '#FFF',
   },
-  setCenters : {
+  setCenters: {
     flex: 1,
     justifyContent: 'center',
     gap: 30,
@@ -102,7 +106,7 @@ const styles = StyleSheet.create({
     verticalAlign: 'middle',
     alignItems: 'center',
   },
-  eventName : {
+  eventName: {
     color: 'white',
     textAlign: 'center',
     fontWeight: 'bold',
@@ -143,7 +147,7 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   iconsCon: {
-    flexDirection: 'column',   
+    flexDirection: 'column',
     alignItems: "flex-end",
   },
 });

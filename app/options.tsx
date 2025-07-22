@@ -1,96 +1,177 @@
-import React, { useState, useEffect, Component } from 'react';
-import { StyleSheet, Text, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useMemo } from 'react';
+import { StyleSheet, Text, TextInput, TouchableOpacity, Modal, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getStorage } from '@/lib/storage';
+import { LinearGradient } from 'expo-linear-gradient';
+import { ScrollView } from 'react-native-reanimated/lib/typescript/Animated';
 
 import { useSharedValue } from 'react-native-reanimated';
-import { KeyboardAvoidingView, View } from 'react-native';
+import { View, KeyboardAvoidingView } from 'react-native';
+import RadioGroup from 'react-native-radio-buttons-group';
+import Toast,  { BaseToast, ErrorToast } from 'react-native-toast-message';
+import * as ImagePicker from 'expo-image-picker';
+import { useMediaLibraryPermissions } from 'expo-image-picker';
 
 import type { ColorFormatsObject } from 'reanimated-color-picker';
-import ColorPicker, {colorKit, InputWidget, OpacitySlider, Panel2, SaturationSlider} from 'reanimated-color-picker';
-import BaseContainer from '@/components/BaseContainer';
-import Divider from '@/components/Divider';
-import { colorPickerStyle } from '@/components/colorPickerStyle';
+import ColorPicker, { InputWidget, Panel2, OpacitySlider, SaturationSlider } from 'reanimated-color-picker';
 
 export default function OptionScreen() {
-    const [eventName, setEventName] = useState('');
-    const [logoUri, setLogoUri] = useState<string | null>(null);
-    const isValidUri = (uri: string) => uri.startsWith('file://') || uri.startsWith('http');
-    
-    const initialCol1 = colorKit.randomHslColor().hex();
-    const [cardColor1, setCardColor1] = useState(initialCol1);
-    const currentCol1 = useSharedValue(initialCol1);
-    const onColChange1 = (color: ColorFormatsObject) => {
-        'worklet';
-        currentCol1.value = color.hex;
-    };
-    const onColorPick1 = (color: ColorFormatsObject) => {
-        setCardColor1(color.hex);
-    };
-    
-    const initialCol2 = colorKit.randomHslColor().hex();
-    const [cardColor2, setCardColor2] = useState(initialCol2);
-    const currentCol2 = useSharedValue(initialCol2);
-    const onColChange2 = (color: ColorFormatsObject) => {
-        'worklet';
-        currentCol2.value = color.hex;
-    };
-    const onColorPick2 = (color: ColorFormatsObject) => {
-        setCardColor2(color.hex);
-    };
-
-    const [cardColorType, setCardColorType] = useState('');
-
     const storage = getStorage();
+
+    const [eventName, setEventName] = useState(storage.getString('eventName') || '');
+    const [logoUri, setLogoUri] = useState(storage.getString('eventLogo') || '@/assets/images/rune.png');
+
+    const pickImage = async () => {
+        let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images'],
+            allowsEditing: true,
+            aspect: [4, 4],
+            quality: 1,
+        });
+        if (!result.canceled) {
+            setLogoUri(result.assets[0].uri);
+        }
+    }
+
+    const [cardColorType, setCardColorType] = useState(storage.getString('cardColorType') || 'gradient');
+    const [cardColor1, setCardColor1] = useState(storage.getString('cardColor1') || '#fc3636');
+    const [cardColor2, setCardColor2] = useState(storage.getString('cardColor2') || '#4736fc');
+    const [editColorNum, setEditColorNum] = useState<'color1' | 'color2' | null>(null);
+
+    const [isPickerVisible, setPickerVisible] = useState(false);
+
+    const colorTypeOptions = useMemo(() => ([
+        { id: 'gradient', label: 'Gradient', value: 'gradient', color: '#2418acff' },
+        { id: 'solid', label: 'Solid', value: 'solid', color: '#2418acff' },
+    ]), []);
+
+    const currentColor = useSharedValue(cardColor1);
+
+    const openColorPicker = (target: 'color1' | 'color2') => {
+        setEditColorNum(target);
+        currentColor.value = target === 'color1' ? cardColor1 : cardColor2;
+        setPickerVisible(true);
+    };
+
+    const handleColorChange = ({ hex }: { hex: string }) => {
+        if (editColorNum === 'color1') setCardColor1(hex)
+        else if (editColorNum === 'color2') setCardColor2(hex)
+    }
 
     const saveChanges = () => {
         storage.set('eventName', eventName);
-        console.log('Saved Event Name :', eventName);
+        storage.set('cardColor1', cardColor1);
+        storage.set('cardColor2', cardColor2);
+        storage.set('cardColorType', cardColorType);
+        storage.set('eventLogo', logoUri);
+        alert('success');
     };
 
     useEffect(() => {
+        (async() => {
+            const {status} = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                alert('Media Permissions Needed!')
+            }
+        })();
+
         const savedEventName = storage.getString('eventName');
-        if (savedEventName) {
-            setEventName(savedEventName);
-        }
+        const savedColor1 = storage.getString('cardColor1');
+        const savedColor2 = storage.getString('cardColor2');
+        const savedColorType = storage.getString('cardColorType');
+        const savedLogo = storage.getString('eventLogo');
+        if (savedEventName) setEventName(savedEventName);
+        if (savedColor1) setCardColor1(savedColor1);
+        if (savedColor2) setCardColor2(savedColor2);
+        if (savedColorType) setCardColorType(savedColorType);
+        if (savedLogo) setLogoUri(savedLogo);
     }, []);
 
     return (
         <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-
             <Text style={styles.labelTop}>Event Name</Text>
             <TextInput
                 style={styles.input}
                 value={eventName}
                 onChangeText={setEventName}
-                placeholder='Enter event name'/>
+                placeholder='Enter event name' />
             <Text style={styles.label}>Event Logo</Text>
             <View style={styles.logoCon}>
-                <TouchableOpacity style={styles.logoPicker}>
+                <TouchableOpacity 
+                    style={styles.logoPicker}
+                    onPress={pickImage}>
+                        {logoUri &&
+                            <Image source={{ uri: logoUri }} style={styles.logoImage}/>
+                        }
                 </TouchableOpacity>
                 <Text style={styles.subLabel}>Click Image to Change</Text>
-            </View>
-            <Text style={[styles.label, {marginBottom: 0}]}>Card Color Options</Text>
-            <View style={[styles.colorContainer, {marginBottom: 30}]}>
-                <Text style={[styles.label, {flex: 3}]}>Card Color Type :</Text>
-                <Text style={[styles.label, {flex: 2}]}>Gradient</Text>
-                <Text style={[styles.label, {flex: 2}]}>Solid</Text>
-            </View>
-            <View style={styles.colorContainer}>
-                <TouchableOpacity style={[{flexDirection: 'row', flex: 1}]}>
-                    <View style={[styles.colorBox, {marginTop: 0, flex: 1}]}/>
-                    <Text style={[styles.label, {marginTop: 0, flex: 5}]}>Color Hex 1</Text>
-                </TouchableOpacity>
 
-                <TouchableOpacity style={[{flexDirection: 'row', flex: 1}]}>
-                    <View style={[styles.colorBox, {marginTop: 0, flex: 1}]}/>
-                    <Text style={[styles.label, {marginTop: 0, flex: 5}]}>Color Hex 2</Text>
+            </View>
+            <Text style={[styles.label, { marginBottom: 0 }]}>Card Color Options</Text>
+            <View style={[styles.colorContainer, { marginBottom: 0 }]}>
+                <Text style={[styles.label, { paddingEnd: 20, paddingBottom: 20 }]}>Card Color Type :</Text>
+                <RadioGroup
+                    radioButtons={colorTypeOptions}
+                    onPress={(selectedId) => { setCardColorType; setCardColorType(selectedId);}}
+                    selectedId={cardColorType}
+                    layout='row' />
+            </View>
+            <LinearGradient
+                colors={cardColorType === 'gradient' ? [cardColor1, cardColor2] : [cardColor1, cardColor1]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.card}>
+                <View style={styles.cardPreview} />
+            </LinearGradient>
+            <View style={styles.colorRow}>
+                <TouchableOpacity onPress={() => openColorPicker('color1')} style={styles.colorOptContainer}>
+                    <View style={[styles.colorBox, { backgroundColor: cardColor1 }]} />
+                    <Text style={[styles.label, { bottom: 12 }]}>CardColor 1</Text>
                 </TouchableOpacity>
+                {cardColorType === 'gradient' && (
+                    <TouchableOpacity onPress={() => openColorPicker('color2')} style={styles.colorOptContainer}>
+                        <View style={[styles.colorBox, { backgroundColor: cardColor2 }]} />
+                        <Text style={[styles.label, { bottom: 12 }]}>CardColor 2</Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={saveChanges} >
+            <TouchableOpacity 
+                style={styles.saveBtn} 
+                onPress={saveChanges} >
                 <Text style={styles.saveBtnTxt}>Simpan</Text>
             </TouchableOpacity>
+            <Modal visible={isPickerVisible} transparent animationType='slide'>
+                <View style={styles.pickerModal}>
+                    <ColorPicker
+                        value={editColorNum === 'color1' ? cardColor1 : cardColor2}
+                        sliderThickness={26}
+                        thumbSize={13}
+                        thumbShape='doubleTriangle'
+                        onChange={(color) => {
+                            'worklet';
+                            currentColor.value = color.hex;
+                        }}
+                        onCompleteJS={handleColorChange}
+                        adaptSpectrum
+                        style={{ width: '100%' }}>
+                        <Panel2
+                            style={styles.panelStyle}
+                            verticalChannel='brightness'
+                            thumbShape='ring'
+                            thumbSize={30} />
+                        <SaturationSlider style={styles.sliderStyle} />
+                        <OpacitySlider style={styles.sliderStyle} />
+                        <InputWidget inputStyle={styles.inputStyle} iconColor='707070' />
+                    </ColorPicker>
+
+                    <TouchableOpacity
+                        style={[styles.closePicker]}
+                        onPress={() => { setPickerVisible(false);}}>
+                        <Text style={styles.saveBtnTxt}>Done</Text>
+                    </TouchableOpacity>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -100,6 +181,11 @@ const styles = StyleSheet.create({
         flex: 1,
         padding: 16,
         backgroundColor: '#fff',
+    },
+    logoImage: {
+        width: 200,
+        height: 200,
+        borderRadius: 30,
     },
     title: {
         fontSize: 24,
@@ -128,13 +214,33 @@ const styles = StyleSheet.create({
     colorContainer: {
         flexDirection: 'row',
         paddingStart: 10,
+        alignItems: 'center',
     },
     colorBox: {
-    width: 25,
-    height: 32,
-    borderWidth: 1,
-    backgroundColor: 'rgba(255, 0, 0, 1)',
-    marginEnd: 10,
+        width: 40,
+        height: 40,
+        borderWidth: 1,
+        marginEnd: 10,
+    },
+    colorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 60,
+        paddingStart: 20,
+    },
+    colorOptContainer: {
+        flexDirection: 'row',
+        gap: 5,
+    },
+    cardPreview: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        height: 110,
+        paddingHorizontal: 15,
+        borderColor: '#d3d3d3ff',
+        borderWidth: 5,
+        borderRadius: 6,
     },
     input: {
         borderWidth: 1,
@@ -164,12 +270,45 @@ const styles = StyleSheet.create({
         backgroundColor: '#eee',
         justifyContent: 'center',
         borderRadius: 8,
+        alignItems: 'center',
     },
-    logoImage: {
+    card: {
+        borderRadius: 15,
+        marginHorizontal: 5,
+        marginBottom: 20,
+    },
+    pickerModal: {
+        backgroundColor: '#f5f5f5',
+        margin: 30,
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    panelStyle: {
+        height: 250,
         width: '100%',
-        height: '100%',
-        borderRadius: 8,
-        resizeMode: 'contain',
+        borderRadius: 12,
+        marginBottom: 10,
     },
-
+    sliderStyle: {
+        marginVertical: 6,
+    },
+    inputStyle: {
+        borderWidth: 1,
+        borderColor: '#cccccccc',
+        borderRadius: 8,
+        padding: 8,
+        color: '#333',
+    },
+    closePicker: {
+        backgroundColor: '#12c70c',
+        width: '90%',
+        alignItems: 'center',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 10,
+        marginTop: 100,
+        marginBottom: 20,
+    },
 });
