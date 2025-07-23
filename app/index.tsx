@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function HomeScreen() {
   const storage = getStorage();
   const [eventName, setEventName] = useState('');
-  const [logoUri, setLogoUri] = useState(storage.getString('eventLogo') || '@/assets/images/rune.png');
+  const [logoUri, setLogoUri] = useState<string | null>(null);
+  const defaultLogo = require('@/assets/images/rune.png');
 
   const [cardColorType, setCardColorType] = useState(storage.getString('cardColorType') || 'gradient');
   const [cardColor1, setCardColor1] = useState(storage.getString('cardColor1') || '#fc3636');
@@ -29,7 +30,10 @@ export default function HomeScreen() {
       if (savedColor1) setCardColor1(savedColor1);
       if (savedColor2) setCardColor2(savedColor2);
       if (savedColorType) setCardColorType(savedColorType);
-      if (savedLogo) setLogoUri(savedLogo);
+
+      if (savedLogo) {
+        setLogoUri(savedLogo);
+      } else { setLogoUri(null); }
     }, [])
   );
 
@@ -50,7 +54,7 @@ export default function HomeScreen() {
           style={styles.card}>
           <View style={styles.logoContainer}>
             <Image
-              source={logoUri}
+              source={logoUri? { uri: logoUri} : defaultLogo}
               style={styles.logo}
               contentFit='contain'
             />
@@ -82,8 +86,9 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   optHeader: {
     alignItems: 'flex-end',
-    paddingEnd: 5,
-    paddingTop: 25,
+    paddingEnd: 10,
+    paddingTop: 10,
+    paddingBottom: 25,
   },
   optCons: {
     borderWidth: 3,

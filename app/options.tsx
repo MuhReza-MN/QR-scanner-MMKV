@@ -3,23 +3,19 @@ import { StyleSheet, Text, TextInput, TouchableOpacity, Modal, Image } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getStorage } from '@/lib/storage';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView } from 'react-native-reanimated/lib/typescript/Animated';
 
 import { useSharedValue } from 'react-native-reanimated';
-import { View, KeyboardAvoidingView } from 'react-native';
+import { View } from 'react-native';
 import RadioGroup from 'react-native-radio-buttons-group';
-import Toast,  { BaseToast, ErrorToast } from 'react-native-toast-message';
 import * as ImagePicker from 'expo-image-picker';
-import { useMediaLibraryPermissions } from 'expo-image-picker';
-
-import type { ColorFormatsObject } from 'reanimated-color-picker';
 import ColorPicker, { InputWidget, Panel2, OpacitySlider, SaturationSlider } from 'reanimated-color-picker';
 
 export default function OptionScreen() {
     const storage = getStorage();
 
     const [eventName, setEventName] = useState(storage.getString('eventName') || '');
-    const [logoUri, setLogoUri] = useState(storage.getString('eventLogo') || '@/assets/images/rune.png');
+    const [logoUri, setLogoUri] = useState<string | null>(storage.getString('eventLogo') || null);
+    const defaultLogo = require('@/assets/images/rune.png');
 
     const pickImage = async () => {
         let result = await ImagePicker.launchImageLibraryAsync({
@@ -63,7 +59,13 @@ export default function OptionScreen() {
         storage.set('cardColor1', cardColor1);
         storage.set('cardColor2', cardColor2);
         storage.set('cardColorType', cardColorType);
-        storage.set('eventLogo', logoUri);
+        
+        if (logoUri) {
+            storage.set('eventLogo', logoUri);
+        } else {
+            storage.delete('eventLogo');
+        }
+
         alert('success');
     };
 

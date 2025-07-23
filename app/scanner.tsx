@@ -1,5 +1,5 @@
 import React from 'react';
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Modal, StyleSheet, Linking } from 'react-native';
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -18,35 +18,24 @@ export default function ScannerScreen() {
   }, []);
 
   const handleBarcodeScanner = useCallback(
-    ({ data } : barcodeResult) => {
+    ({ data }: barcodeResult) => {
       setBarcodeResult(data);
-    },[]
+    }, []
   );
 
   const isValidUrl = (text: string) => {
-  const pattern = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
-  return pattern.test(text);
+    const pattern = /^(https?:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
+    return pattern.test(text);
   };
 
-
-  if (!permission) {
-    return <View />;
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView style={styles.safeArea} edges={['bottom']}>
-        <View style={styles.container}>
-          <Text style={styles.text}>
-            We need your permission to show the camera
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={requestPermission}>
-            <Text style={styles.btnText}>Grant Permission</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  useEffect(() => {
+    (async () => {
+      const { status } = await requestPermission();
+      if (status !== 'granted') {
+        alert('Media Permissions Needed!')
+      }
+    })();
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['bottom']}>
@@ -55,60 +44,60 @@ export default function ScannerScreen() {
           ref={cameraRef}
           style={styles.camera}
           zoom={zoom}
-          barcodeScannerSettings={{ 
+          barcodeScannerSettings={{
             barcodeTypes: [
-              "qr","ean13","ean8",
-              "pdf417","aztec",
+              "qr", "ean13", "ean8",
+              "pdf417", "aztec",
               "datamatrix",
             ],
           }}
           onBarcodeScanned={isBarcodeMode ? handleBarcodeScanner : undefined}>
-            <View style={styles.overlay}>
-              <View style={styles.scanArea}/>
-            </View>
+          <View style={styles.overlay}>
+            <View style={styles.scanArea} />
+          </View>
 
-            <View style={styles.controlContainer}>
-              <View style={styles.row}>
-                <Text style={styles.text}>
-                  Zoom: {zoom.toFixed(1)}x
-                </Text>
-                <Slider
-                  style={styles.slider}
-                  minimumValue={0}
-                  maximumValue={1}
-                  value={zoom}
-                  onValueChange={handleZoomLevel}/>
-              </View>
+          <View style={styles.controlContainer}>
+            <View style={styles.row}>
+              <Text style={styles.text}>
+                Zoom: {zoom.toFixed(1)}x
+              </Text>
+              <Slider
+                style={styles.slider}
+                minimumValue={0}
+                maximumValue={1}
+                value={zoom}
+                onValueChange={handleZoomLevel} />
             </View>
-          </CameraView>
-          <Modal
-            animationType='slide'
-            transparent={true}
-            visible={!!barcodeResult}
-            onRequestClose={() => setBarcodeResult(null)}>
-              <View style={styles.modalView}>
-                <Text style={styles.modalText}>Barcode Detected:</Text>
-                {isValidUrl(barcodeResult) ? (
-                  <TouchableOpacity onPress={() => Linking.openURL(barcodeResult)}>
-                    <Text style={styles.linkText}>{barcodeResult}</Text>
-                  </TouchableOpacity>
-                ) : (
-                  <Text style={styles.barcodeText}>{barcodeResult}</Text>
-                )}
-                <TouchableOpacity
-                  style={[styles.button, styles.buttonClose]}
-                  onPress={() => setBarcodeResult(null)}>
-                    <Text style={styles.btnText}>Close</Text>
-                  </TouchableOpacity>
-              </View>
-          </Modal>
+          </View>
+        </CameraView>
+        <Modal
+          animationType='slide'
+          transparent={true}
+          visible={!!barcodeResult}
+          onRequestClose={() => setBarcodeResult(null)}>
+          <View style={styles.modalView}>
+            <Text style={styles.modalText}>Barcode Detected:</Text>
+            {isValidUrl(barcodeResult) ? (
+              <TouchableOpacity onPress={() => Linking.openURL(barcodeResult)}>
+                <Text style={styles.linkText}>{barcodeResult}</Text>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.barcodeText} selectable={true}>{barcodeResult}</Text>
+            )}
+            <TouchableOpacity
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setBarcodeResult(null)}>
+              <Text style={styles.btnText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea : {
+  safeArea: {
     flex: 1,
     backgroundColor: 'black',
   },
@@ -129,11 +118,12 @@ const styles = StyleSheet.create({
   },
 
   scanArea: {
-    width: 250,
-    height: 250,
+    width: 300,
+    height: 300,
     borderColor: '#00FF00',
-    borderWidth: 2,
+    borderWidth: 3,
     borderRadius: 10,
+    borderStyle: 'solid',
     backgroundColor: 'rgba(0,0,0,0.2)',
   },
 
@@ -155,10 +145,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     padding: 10,
     borderRadius: 5,
+    width: 100,
+    alignItems: 'center',
   },
   btnText: {
-    color: "#000",
+    color: 'white',
     fontSize: 16,
+    fontWeight: '900',
   },
   text: {
     color: "#fff",
@@ -167,17 +160,6 @@ const styles = StyleSheet.create({
   slider: {
     flex: 1,
     marginLeft: 10,
-  },
-  captureBtn: {
-    backgroundColor: "#fff",
-    paddingVertical: 15,
-    paddingHorizontal: 30,
-    borderRadius: 30,
-  },
-  captureBtnText: {
-    color: "#000",
-    fontSize: 18,
-    fontWeight: "bold",
   },
   modalView: {
     margin: 20,
@@ -206,12 +188,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   buttonClose: {
-    backgroundColor: "#2196F3",
+    backgroundColor: "#e71a1aff",
     marginTop: 10,
   },
   linkText: {
-  color: '#1E90FF',
-  textDecorationLine: 'underline',
+    color: '#1E90FF',
+    textDecorationLine: 'underline',
   },
 
 });
